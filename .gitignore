@@ -1,0 +1,28 @@
+# macOS
+# Reference: https://github.com/github/gitignore/blob/main/Global/macOS.gitignore
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# JetBrains
+# Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
+.idea/
+!.idea/vcs.xml
+*.iml
+
+# VisualStudioCode
+# Reference: https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
+.vscode/*
+!.vscode/settings.json
+.history/
+
+# Python
+# Reference: https://github.com/github/gitignore/blob/main/Python.gitignore
+.Python
+build/
+
+# PyInstaller
+# Reference: https://github.com/github/gitignore/blob/main/Python.gitignore
+*.manifest
+*.spec
+
