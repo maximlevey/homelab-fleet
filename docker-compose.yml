@@ -23,6 +23,8 @@ services:
     env_file:
       - .env
     restart: unless-stopped
+    profiles:
+      - tunnel
     volumes:
       - cloudflared:/etc/cloudflared
     networks:

@@ -52,7 +52,7 @@ generate_openssl_certificates() {
   read -rp "Enter a common name for your certificate: " common_name
 
   openssl req -x509 -newkey rsa:4096 -sha256 -days 3650 -nodes \
-    -keyout "secrets/certificate.pem" -out "secrets/certificate.key" \
+    -keyout "secrets/certificate.key" -out "secrets/certificate.pem" \
     -subj "/CN=${common_name}" -addext "subjectAltName=DNS:${common_name}"
 }
 
@@ -87,8 +87,14 @@ main() {
 
   check_directory_path
 
-  type cloudflared &>/dev/null || { echo "Requirement 'cloudflared' not installed"; exit 1; }
-  type openssl &>/dev/null || { echo "Requirement 'openssl' not installed"; exit 1; }
+  type cloudflared &>/dev/null || {
+    echo "Requirement 'cloudflared' not installed"
+    exit 1
+  }
+  type openssl &>/dev/null || {
+    echo "Requirement 'openssl' not installed"
+    exit 1
+  }
 
   set -o allexport
   source .env

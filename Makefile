@@ -11,7 +11,7 @@ setup:
 	scripts/setup_tunnel.sh
 
 start:
-	$(DOCKER_COMPOSE_COMMAND) up -d --build
+	scripts/start_services.sh
 
 stop:
 	$(DOCKER_COMPOSE_COMMAND) down
