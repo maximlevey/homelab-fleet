@@ -1,79 +1,89 @@
 version: '3.5'
 
 volumes:
-  fleet-logs:
-  fleet-db:
+  cloudflared:
+  database:
+  logs:
 
 networks:
-  fleet:
-    name: fleet
+  fleetdm:
+    name: fleetdm
 
 services:
   #######################################
+  # CLOUDFLARED
+  #######################################
+  cloudflared:
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: ./services/cloudflared/Dockerfile
+      args:
+        CLOUDFLARED_VERSION: ${CLOUDFLARED_VERSION}
+    env_file:
+      - .env
+    restart: unless-stopped
+    volumes:
+      - cloudflared:/etc/cloudflared
+    networks:
+      - fleetdm
+  #######################################
   # MYSQL
   #######################################
-  fleet-mysql:
-    image: mysql:${MYSQL_VERSION:-5.7}
+  mysql:
     platform: linux/x86_64
-    command: 'mysqld --datadir=/tmp/data --event-scheduler=ON'
+    build:
+      context: .
+      dockerfile: ./services/mysql/Dockerfile
+      args:
+        MYSQL_VERSION: ${MYSQL_VERSION}
+    env_file:
+      - .env
     restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
-      - fleet-db:/var/lib/mysql
+      - database:/var/lib/mysql
     networks:
-      - fleet
+      - fleetdm
     ports:
-      - "3308:3306"
-    healthcheck:
-      test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
-      interval: 1s
-      retries: 120
+      - "3306:3306"
   #######################################
   # REDIS
   #######################################
-  fleet-redis:
-    image: redis:${REDIS_VERSION:-6}
-    restart: unless-stopped
-    networks:
-      - fleet
-    healthcheck:
-      test: [ "CMD", "redis-cli", "ping" ]
-      interval: 1s
-      timeout: 3s
-      retries: 30
-  #######################################
-  # FLEET-CORE
-  # Backend Fleet server for clients
-  #######################################
-  fleet-core:
-    image: fleetdm/fleet:${FLEET_VERSION:-latest}
+  redis:
     platform: linux/x86_64
-    command: sh -c "/usr/bin/fleet prepare db --no-prompt && /usr/bin/fleet serve"
-    restart: unless-stopped
+    build:
+      context: .
+      dockerfile: ./services/redis/Dockerfile
+      args:
+        REDIS_VERSION: ${REDIS_VERSION}
     env_file:
-      .config/fleet_conf.env
-    environment:
-      FLEET_SERVER_CERT: ${FLEET_SERVER_CERT}
-      FLEET_SERVER_KEY: ${FLEET_SERVER_KEY}
-      FLEET_LICENSE_KEY: ${FLEET_LICENSE_KEY}
-      FLEET_MYSQL_DATABASE: ${MYSQL_DATABASE}
-      FLEET_MYSQL_USERNAME: ${MYSQL_USER}
-      FLEET_MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    depends_on:
-      - fleet-mysql
-      - fleet-redis
-    volumes:
-      - fleet-logs:/var/log/osquery
-      - ${FLEET_SERVER_CERT}:${FLEET_SERVER_CERT}
-      - ${FLEET_SERVER_KEY}:${FLEET_SERVER_KEY}
+      - .env
+    restart: unless-stopped
     networks:
-      fleet:
-        aliases:
-          - host.docker.internal
-          - localhost
+      - fleetdm
+  #######################################
+  # FLEET-GUI
+  #######################################
+  fleet:
+    platform: linux/x86_64
+    build:
+      context: .
+      dockerfile: ./services/fleet/Dockerfile
+      args:
+        FLEET_VERSION: ${FLEET_VERSION}
+        FLEET_MYSQL_USERNAME: ${MYSQL_USER}
+        FLEET_MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    env_file:
+      - .env
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - logs:/var/log/osquery
+    networks:
+      - fleetdm
     ports:
       - "8080:8080"
