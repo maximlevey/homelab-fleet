@@ -1,10 +1,16 @@
 <h1>FleetDM Docker</h1>
 
-```cd fleetdm-docker```
+```
+cd fleetdm-docker
+```
 
-```make setup```
+```
+make setup
+```
 
-Confirm `secrets/cloudfared.yml` configuration
+If using cloudflared, confirm `secrets/cloudfared.yml` configuration
 
-```make start```
+```
+make start
+```
 
